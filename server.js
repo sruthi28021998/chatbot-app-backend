@@ -1,6 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
@@ -30,6 +32,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Server error" });
 });
 
-app.listen(process.env.PORT || 5000, () =>
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: process.env.CLIENT_URL } });
+require("./sockets/chatSocket")(io);
+
+server.listen(process.env.PORT || 5000, () =>
   console.log(`Server running on port ${process.env.PORT || 5000}`)
 );
