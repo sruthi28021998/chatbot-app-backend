@@ -2,6 +2,10 @@ const router = require("express").Router();
 const auth = require("../middleware/auth");
 const c = require("../controllers/chatController");
 
-router.post("/message", auth, c.sendMessage);
+router.use(auth);
+router.post("/message", c.sendMessage);
+router.get("/", c.list);
+router.get("/:id", c.getOne);
+router.delete("/:id", c.remove);
 
 module.exports = router;

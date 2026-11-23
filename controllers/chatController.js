@@ -29,3 +29,22 @@ exports.sendMessage = asyncHandler(async (req, res) => {
     message: convo.messages[convo.messages.length - 1],
   });
 });
+
+exports.list = asyncHandler(async (req, res) => {
+  const items = await Conversation.find({ user: req.user._id })
+    .select("title category updatedAt")
+    .sort({ updatedAt: -1 })
+    .lean();
+  res.json(items);
+});
+
+exports.getOne = asyncHandler(async (req, res) => {
+  const convo = await Conversation.findOne({ _id: req.params.id, user: req.user._id });
+  if (!convo) return res.status(404).json({ message: "Conversation not found" });
+  res.json(convo);
+});
+
+exports.remove = asyncHandler(async (req, res) => {
+  await Conversation.deleteOne({ _id: req.params.id, user: req.user._id });
+  res.json({ ok: true });
+});
