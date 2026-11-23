@@ -20,7 +20,18 @@ exports.sendMessage = asyncHandler(async (req, res) => {
     .slice(-20)
     .map((m) => ({ role: m.role, content: m.content }));
 
-  const reply = await getAIResponse(history);
+  let reply;
+  try {
+    reply = await getAIResponse(history);
+  } catch (e) {
+    console.error("AI error:", e.message);
+    return res.status(e.status === 429 ? 429 : 502).json({
+      message:
+        e.status === 429
+          ? "AI is busy or quota exceeded. Please try again shortly."
+          : "AI service failed. Please try again.",
+    });
+  }
   convo.messages.push({ role: "assistant", content: reply });
   await convo.save();
 
@@ -39,7 +50,7 @@ exports.list = asyncHandler(async (req, res) => {
 });
 
 exports.getOne = asyncHandler(async (req, res) => {
-  const convo = await Conversation.findOne({ _id: req.params.id, user: req.user._id });
+  const convo = await Conversation.findOne({ _id: req.params.id, user: req.user._id }).lean();
   if (!convo) return res.status(404).json({ message: "Conversation not found" });
   res.json(convo);
 });
