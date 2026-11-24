@@ -2,8 +2,10 @@ const Conversation = require("../models/Conversation");
 const asyncHandler = require("../middleware/asyncHandler");
 const { getAIResponse } = require("../services/aiService");
 
+const CATEGORIES = ["casual", "professional", "creative"];
+
 exports.sendMessage = asyncHandler(async (req, res) => {
-  const { conversationId, content } = req.body;
+  const { conversationId, content, category } = req.body;
   if (!content || !content.trim() || content.length > 2000) {
     return res.status(400).json({ message: "Message must be 1-2000 characters" });
   }
@@ -12,7 +14,11 @@ exports.sendMessage = asyncHandler(async (req, res) => {
     ? await Conversation.findOne({ _id: conversationId, user: req.user._id })
     : null;
   if (!convo) {
-    convo = new Conversation({ user: req.user._id, title: content.trim().slice(0, 40) });
+    convo = new Conversation({
+      user: req.user._id,
+      title: content.trim().slice(0, 40),
+      category: CATEGORIES.includes(category) ? category : "casual",
+    });
   }
 
   convo.messages.push({ role: "user", content: content.trim() });
@@ -22,7 +28,7 @@ exports.sendMessage = asyncHandler(async (req, res) => {
 
   let reply;
   try {
-    reply = await getAIResponse(history);
+    reply = await getAIResponse(history, convo.category);
   } catch (e) {
     console.error("AI error:", e.message);
     return res.status(e.status === 429 ? 429 : 502).json({
@@ -32,6 +38,7 @@ exports.sendMessage = asyncHandler(async (req, res) => {
           : "AI service failed. Please try again.",
     });
   }
+
   convo.messages.push({ role: "assistant", content: reply });
   await convo.save();
 
@@ -57,5 +64,18 @@ exports.getOne = asyncHandler(async (req, res) => {
 
 exports.remove = asyncHandler(async (req, res) => {
   await Conversation.deleteOne({ _id: req.params.id, user: req.user._id });
+  res.json({ ok: true });
+});
+
+exports.rate = asyncHandler(async (req, res) => {
+  const { messageId, rating } = req.body;
+  if (![1, -1, 0].includes(rating)) {
+    return res.status(400).json({ message: "Invalid rating" });
+  }
+  const convo = await Conversation.findOne({ _id: req.params.id, user: req.user._id });
+  const msg = convo && convo.messages.id(messageId);
+  if (!msg) return res.status(404).json({ message: "Message not found" });
+  msg.rating = rating;
+  await convo.save();
   res.json({ ok: true });
 });

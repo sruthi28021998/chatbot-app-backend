@@ -6,6 +6,7 @@ router.use(auth);
 router.post("/message", c.sendMessage);
 router.get("/", c.list);
 router.get("/:id", c.getOne);
+router.put("/:id/rate", c.rate);
 router.delete("/:id", c.remove);
 
 module.exports = router;

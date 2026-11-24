@@ -2,12 +2,18 @@ const OpenAI = require("openai");
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-exports.getAIResponse = async (history) => {
+const prompts = {
+  casual: "You are a friendly, casual assistant. Keep replies conversational.",
+  professional: "You are a professional assistant. Be precise, formal and concise.",
+  creative: "You are a creative assistant. Be imaginative and expressive.",
+};
+
+exports.getAIResponse = async (history, category = "casual") => {
   const completion = await client.chat.completions.create(
     {
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a helpful, friendly AI assistant." },
+        { role: "system", content: prompts[category] || prompts.casual },
         ...history,
       ],
       max_tokens: 800,

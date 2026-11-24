@@ -33,3 +33,11 @@ exports.login = asyncHandler(async (req, res) => {
 });
 
 exports.me = (req, res) => res.json(pub(req.user));
+exports.updateSettings = asyncHandler(async (req, res) => {
+  const { chatbotName, theme } = req.body;
+  const user = await User.findById(req.user._id);
+  if (chatbotName) user.settings.chatbotName = String(chatbotName).slice(0, 30);
+  if (["light", "dark"].includes(theme)) user.settings.theme = theme;
+  await user.save();
+  res.json(pub(user));
+});
