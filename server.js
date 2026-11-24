@@ -1,18 +1,25 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
 const http = require("http");
-const { Server } = require("socket.io");
+const cors = require("cors");
 const helmet = require("helmet");
+const compression = require("compression");
 const rateLimit = require("express-rate-limit");
+const { Server } = require("socket.io");
 const connectDB = require("./config/db");
+
+if (!process.env.JWT_SECRET || !process.env.CLIENT_URL) {
+  console.error("Missing JWT_SECRET or CLIENT_URL in .env");
+  process.exit(1);
+}
 
 connectDB();
 
 const app = express();
 app.set("trust proxy", 1);
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_URL }));
+app.use(compression());
+app.use(cors({ origin: process.env.CLIENT_URL, methods: ["GET", "POST", "PUT", "DELETE"] }));
 app.use(express.json({ limit: "10kb" }));
 
 app.use("/api", rateLimit({ windowMs: 15 * 60 * 1000, max: 300, message: { message: "Too many requests, try again later" } }));

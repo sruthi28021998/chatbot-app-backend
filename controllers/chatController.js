@@ -6,7 +6,7 @@ const CATEGORIES = ["casual", "professional", "creative"];
 
 exports.sendMessage = asyncHandler(async (req, res) => {
   const { conversationId, content, category } = req.body;
-  if (!content || !content.trim() || content.length > 2000) {
+  if (typeof content !== "string" || !content.trim() || content.length > 2000) {
     return res.status(400).json({ message: "Message must be 1-2000 characters" });
   }
 
@@ -26,6 +26,7 @@ exports.sendMessage = asyncHandler(async (req, res) => {
     .slice(-20)
     .map((m) => ({ role: m.role, content: m.content }));
 
+  const started = Date.now();
   let reply;
   try {
     reply = await getAIResponse(history, convo.category);
@@ -39,7 +40,7 @@ exports.sendMessage = asyncHandler(async (req, res) => {
     });
   }
 
-  convo.messages.push({ role: "assistant", content: reply });
+  convo.messages.push({ role: "assistant", content: reply, responseMs: Date.now() - started });
   await convo.save();
 
   res.json({

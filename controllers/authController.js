@@ -11,32 +11,46 @@ const pub = (u) => ({
   settings: u.settings,
 });
 
+const isStr = (v) => typeof v === "string";
+const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 exports.register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
-  if (!name || !email || !password || password.length < 6) {
-    return res.status(400).json({ message: "Name, email and password (min 6 chars) required" });
+  if (
+    !isStr(name) || !isStr(email) || !isStr(password) ||
+    !name.trim() || name.length > 50 ||
+    !emailRe.test(email) ||
+    password.length < 6 || password.length > 72
+  ) {
+    return res.status(400).json({ message: "Valid name, email and password (6-72 chars) required" });
   }
   if (await User.findOne({ email: email.toLowerCase() })) {
     return res.status(409).json({ message: "Email already registered" });
   }
-  const user = await User.create({ name, email, password });
+  const user = await User.create({ name: name.trim(), email, password });
   res.status(201).json({ token: sign(user._id), user: pub(user) });
 });
 
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email: (email || "").toLowerCase() }).select("+password");
-  if (!user || !(await user.matchPassword(password || ""))) {
+  if (!isStr(email) || !isStr(password)) {
+    return res.status(400).json({ message: "Email and password required" });
+  }
+  const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
+  if (!user || !(await user.matchPassword(password))) {
     return res.status(401).json({ message: "Invalid email or password" });
   }
   res.json({ token: sign(user._id), user: pub(user) });
 });
 
 exports.me = (req, res) => res.json(pub(req.user));
+
 exports.updateSettings = asyncHandler(async (req, res) => {
   const { chatbotName, theme } = req.body;
   const user = await User.findById(req.user._id);
-  if (chatbotName) user.settings.chatbotName = String(chatbotName).slice(0, 30);
+  if (isStr(chatbotName) && chatbotName.trim()) {
+    user.settings.chatbotName = chatbotName.trim().slice(0, 30);
+  }
   if (["light", "dark"].includes(theme)) user.settings.theme = theme;
   await user.save();
   res.json(pub(user));

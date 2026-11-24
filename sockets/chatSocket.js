@@ -26,7 +26,7 @@ module.exports = (io) => {
         }
         last = now;
 
-        if (!content || !content.trim() || content.length > 2000) {
+        if (typeof content !== "string" || !content.trim() || content.length > 2000) {
           return socket.emit("chat_error", "Message must be 1-2000 characters.");
         }
 
@@ -46,8 +46,9 @@ module.exports = (io) => {
           .slice(-20)
           .map((m) => ({ role: m.role, content: m.content }));
 
+        const started = Date.now();
         const reply = await getAIResponse(history, convo.category);
-        convo.messages.push({ role: "assistant", content: reply });
+        convo.messages.push({ role: "assistant", content: reply, responseMs: Date.now() - started });
         await convo.save();
 
         socket.emit("ai_message", {
@@ -56,7 +57,12 @@ module.exports = (io) => {
         });
       } catch (e) {
         console.error("Socket error:", e.message);
-        socket.emit("chat_error", "AI is unavailable right now. Please try again.");
+        socket.emit(
+          "chat_error",
+          e.status === 429
+            ? "AI is busy or quota exceeded. Please try again shortly."
+            : "AI is unavailable right now. Please try again."
+        );
       }
     });
   });
