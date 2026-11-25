@@ -49,7 +49,6 @@ module.exports = (io) => {
         const started = Date.now();
         const reply = await getAIResponse(history, convo.category);
         convo.messages.push({ role: "assistant", content: reply, responseMs: Date.now() - started });
-        await convo.save();
 
         socket.emit("ai_message", {
           conversationId: convo._id,

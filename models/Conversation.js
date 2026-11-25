@@ -5,6 +5,7 @@ const messageSchema = new mongoose.Schema(
     role: { type: String, enum: ["user", "assistant"], required: true },
     content: { type: String, required: true },
     rating: { type: Number, enum: [-1, 0, 1], default: 0 },
+        responseMs: { type: Number },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

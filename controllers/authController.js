@@ -27,7 +27,14 @@ exports.register = asyncHandler(async (req, res) => {
   if (await User.findOne({ email: email.toLowerCase() })) {
     return res.status(409).json({ message: "Email already registered" });
   }
-  const user = await User.create({ name: name.trim(), email, password });
+  const isAdmin =
+    process.env.ADMIN_EMAIL && email.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase();
+  const user = await User.create({
+    name: name.trim(),
+    email,
+    password,
+    role: isAdmin ? "admin" : "user",
+  });
   res.status(201).json({ token: sign(user._id), user: pub(user) });
 });
 

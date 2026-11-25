@@ -29,6 +29,7 @@ app.use("/api/chat/message", rateLimit({ windowMs: 60 * 1000, max: 20, message: 
 app.get("/", (req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/chat", require("./routes/chatRoutes"));
+app.use("/api/admin", require("./routes/adminRoutes"));
 
 app.use((req, res) => res.status(404).json({ message: "Route not found" }));
 
