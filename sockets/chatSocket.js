@@ -56,13 +56,12 @@ module.exports = (io) => {
           message: convo.messages[convo.messages.length - 1],
         });
       } catch (e) {
-        console.error("Socket error:", e.message);
-        socket.emit(
-          "chat_error",
-          e.status === 429
-            ? "AI is busy or quota exceeded. Please try again shortly."
-            : "AI is unavailable right now. Please try again."
-        );
+        console.error("Socket error:", e.status, e.message);
+        let msg = "AI is unavailable right now. Please try again.";
+        if (e.status === 429) msg = "AI is busy or quota exceeded. Please try again shortly.";
+        if (e.status === 503) msg = "AI is overloaded right now. Please try again in a few seconds.";
+        if (e.status === 404) msg = "AI model not found. Check AI_MODEL on the server.";
+        socket.emit("chat_error", msg);
       }
     });
   });
