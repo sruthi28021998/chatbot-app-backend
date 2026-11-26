@@ -9,9 +9,11 @@ const { Server } = require("socket.io");
 const connectDB = require("./config/db");
 
 if (!process.env.JWT_SECRET || !process.env.CLIENT_URL) {
-  console.error("Missing JWT_SECRET or CLIENT_URL in .env");
+  console.error("Missing JWT_SECRET or CLIENT_URL in environment");
   process.exit(1);
 }
+
+const origins = process.env.CLIENT_URL.split(",").map((s) => s.trim().replace(/\/$/, ""));
 
 connectDB();
 
@@ -19,7 +21,7 @@ const app = express();
 app.set("trust proxy", 1);
 app.use(helmet());
 app.use(compression());
-app.use(cors({ origin: process.env.CLIENT_URL, methods: ["GET", "POST", "PUT", "DELETE"] }));
+app.use(cors({ origin: origins, methods: ["GET", "POST", "PUT", "DELETE"] }));
 app.use(express.json({ limit: "10kb" }));
 
 app.use("/api", rateLimit({ windowMs: 15 * 60 * 1000, max: 300, message: { message: "Too many requests, try again later" } }));
@@ -42,7 +44,7 @@ app.use((err, req, res, next) => {
 });
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: process.env.CLIENT_URL } });
+const io = new Server(server, { cors: { origin: origins } });
 require("./sockets/chatSocket")(io);
 
 server.listen(process.env.PORT || 5000, () =>
